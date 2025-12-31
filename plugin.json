@@ -1,0 +1,10 @@
+{
+  "id": "inhibitSleep",
+  "name": "Inhibit Sleep",
+  "description": "Inhibits sleep when a media device is detected",
+  "version": "1.0.0",
+  "author": "johndanger",
+  "type": "daemon",
+  "component": "./InhibitSleep.qml",
+  "permissions": []
+}
