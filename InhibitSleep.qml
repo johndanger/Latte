@@ -19,7 +19,7 @@ PluginComponent {
     // Bar indicator for horizontal bar
     horizontalBarPill: Component {
         Item {
-            width: 40
+            width: 16
             height: 16
             
             DankIcon {
@@ -35,7 +35,7 @@ PluginComponent {
     // Bar indicator for vertical bar
     verticalBarPill: Component {
         Item {
-            width: 40
+            width: 16
             height: 16
             
             DankIcon {
