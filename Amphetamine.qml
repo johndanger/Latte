@@ -11,9 +11,96 @@ PluginComponent {
 
     property bool hasMediaDevices: false
     property bool sleepInhibited: false
+    property string mode: "auto" // "auto" or "manual"
     
     onSleepInhibitedChanged: {
         console.log("sleepInhibited changed to:", sleepInhibited)
+    }
+    
+    // Popout content for mode selection
+    popoutContent: Component {
+        PopoutComponent {
+            id: popout
+            
+            headerText: "Amphetamine"
+            detailsText: "Select auto for when a media player is detected, select manual to toggle sleep inhibition manually"
+            
+            Column {
+                width: parent.width
+                spacing: Theme.spacingS
+                
+                Rectangle {
+                    width: parent.width
+                    height: 40
+                    color: root.mode === "auto" ? Theme.primary : "transparent"
+                    radius: 4
+                    border.color: "#40000000"
+                    border.width: 3
+                    
+                    StyledText {
+                        anchors.centerIn: parent
+                        text: "Auto (Media Detection)"
+                        color: root.mode === "auto" ? "#000000" : "#FFFFFF"
+                        font.pixelSize: Theme.fontSizeMedium
+                    }
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            root.mode = "auto"
+                        }
+                    }
+                }
+                
+                Rectangle {
+                    width: parent.width
+                    height: 40
+                    color: root.mode === "manual" ? Theme.primary : "transparent"
+                    radius: 4
+                    border.color: "#40000000"
+                    border.width: 3
+                    
+                    StyledText {
+                        anchors.centerIn: parent
+                        text: "Manual (On/Off)"
+                        color: root.mode === "manual" ? "#000000" : "#FFFFFF"
+                        font.pixelSize: Theme.fontSizeMedium
+                    }
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            root.mode = "manual"
+                        }
+                    }
+                }
+                
+                // Toggle button for manual mode
+                Rectangle {
+                    width: parent.width
+                    height: 40
+                    visible: root.mode === "manual"
+                    color: root.sleepInhibited ? Theme.primary : Theme.surfaceVariant
+                    radius: 4
+                    border.color: "#40000000"
+                    border.width: 3
+                    
+                    StyledText {
+                        anchors.centerIn: parent
+                        text: root.sleepInhibited ? "Disable Sleep Inhibition" : "Enable Sleep Inhibition"
+                        color: root.sleepInhibited ? "#000000" : "#FFFFFF"
+                        font.pixelSize: Theme.fontSizeMedium
+                    }
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            root.handleClick()
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // Bar indicator for horizontal bar
@@ -28,6 +115,17 @@ PluginComponent {
                 size: 16
                 color: root.sleepInhibited ? Theme.primary : "#808080"
                 opacity: root.sleepInhibited ? 1.0 : 0.3
+            }
+            
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.RightButton
+                onClicked: (mouse) => {
+                    if (mouse.button === Qt.RightButton && root.mode === "manual") {
+                        // Right click: toggle sleep inhibition (only in manual mode)
+                        root.handleClick()
+                    }
+                }
             }
         }
     }
@@ -44,6 +142,17 @@ PluginComponent {
                 size: 16
                 color: root.sleepInhibited ? Theme.primary : "#808080"
                 opacity: root.sleepInhibited ? 1.0 : 0.3
+            }
+            
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.RightButton
+                onClicked: (mouse) => {
+                    if (mouse.button === Qt.RightButton && root.mode === "manual") {
+                        // Right click: toggle sleep inhibition (only in manual mode)
+                        root.handleClick()
+                    }
+                }
             }
         }
     }
@@ -173,6 +282,11 @@ PluginComponent {
     }
 
     function updateSleepInhibition() {
+        // Only auto-update if in auto mode
+        if (root.mode !== "auto") {
+            return
+        }
+        
         if (root.hasMediaDevices && !root.sleepInhibited) {
             // Enable sleep inhibition
             console.log("Enabling sleep inhibition (media device detected)")
@@ -200,6 +314,63 @@ PluginComponent {
                 inhibitDisableProcess.running = true
             })
         }
+    }
+    
+    function handleClick() {
+        if (root.mode === "manual") {
+            // Toggle sleep inhibition manually
+            if (root.sleepInhibited) {
+                root.disableSleepInhibition()
+            } else {
+                root.enableSleepInhibition()
+            }
+        }
+    }
+    
+    function enableSleepInhibition() {
+        console.log("Manually enabling sleep inhibition")
+        root.sleepInhibited = true
+        if (inhibitEnableProcess.running) {
+            inhibitEnableProcess.running = false
+        }
+        Qt.callLater(() => {
+            inhibitEnableProcess.running = true
+        })
+    }
+    
+    function disableSleepInhibition() {
+        console.log("Manually disabling sleep inhibition")
+        root.sleepInhibited = false
+        if (inhibitDisableProcess.running) {
+            inhibitDisableProcess.running = false
+        }
+        Qt.callLater(() => {
+            inhibitDisableProcess.running = true
+        })
+    }
+    
+    function showPopout() {
+        // Access the variant to show the popout
+        // Try to find the variant that has the showPopout method
+        if (root.variants) {
+            for (var i = 0; i < root.variants.length; i++) {
+                var variant = root.variants[i]
+                if (variant) {
+                    // Try different possible method names
+                    if (typeof variant.showPopout === "function") {
+                        variant.showPopout()
+                        return
+                    } else if (typeof variant.openPopout === "function") {
+                        variant.openPopout()
+                        return
+                    } else if (variant.popout && typeof variant.popout.open === "function") {
+                        variant.popout.open()
+                        return
+                    }
+                }
+            }
+        }
+        console.warn("Could not find popout method to show popout")
     }
 
     Component.onCompleted: {
